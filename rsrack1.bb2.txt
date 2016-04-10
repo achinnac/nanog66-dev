@@ -1,0 +1,200 @@
+### Internetwork Expert BB2 Initial Config Version 5.0 for 2500 series
+# 1 is actual relative R&S rack number
+# 1 is masquarade relative R&S rack number
+#
+
+!
+hostname RS.1.1.BB2
+!
+no enable password
+enable secret cisco
+!
+clock timezone PST -8
+clock summer-time PDT recurring
+ip subnet-zero
+no ip domain lookup
+!
+ipv6 unicast-routing
+!
+key chain RIP
+key 1
+key-string CISCO
+!
+interface Loopback0
+ip address 220.20.3.1 255.255.255.0
+ipv6 address 2001:220:20:3::1/64
+ipv6 rip RIPng enable
+!
+interface Loopback1
+ip address 222.22.2.1 255.255.255.0
+ipv6 address 2001:222:22:2::1/64
+ipv6 rip RIPng enable
+!
+interface Loopback3
+ip address 205.90.31.1 255.255.255.0
+ipv6 address 2001:205:90:31::1/64
+ipv6 rip RIPng enable
+!
+interface Loopback51515151
+ip address 51.51.51.51 255.255.255.255
+ipv6 address 2001:51:51:51::51/64
+!
+interface Ethernet0
+description Connected to SW2 Fa0/24
+ip address 192.10.1.254 255.255.255.0
+ip rip authentication mode md5
+ip rip authentication key-chain RIP
+ipv6 address 2001:192:10:1::254/64
+ipv6 rip RIPng enable
+ipv6 ospf 1 area 0
+no shutdown
+!
+router ospf 1
+router-id 192.10.1.254
+redistribute connected subnets route-map LO51515151
+network 192.10.1.254 0.0.0.0 area 51
+!
+router rip
+version 2
+redistribute connected metric 7 route-map LOOPBACKS
+network 192.10.1.0
+distribute-list prefix LOOPBACKS out
+distribute-list prefix DENY_DEFAULT in
+!
+router bgp 254
+no synchronization
+bgp log-neighbor-changes
+neighbor RACKS peer-group
+neighbor RACKS remote-as 200
+neighbor RACKS password CISCO
+neighbor RACKS ebgp-multihop 255
+neighbor 192.10.1.1 peer-group RACKS
+neighbor 192.10.1.2 peer-group RACKS
+neighbor 192.10.1.3 peer-group RACKS
+neighbor 192.10.1.4 peer-group RACKS
+neighbor 192.10.1.5 peer-group RACKS
+neighbor 192.10.1.6 peer-group RACKS
+neighbor 192.10.1.7 peer-group RACKS
+neighbor 192.10.1.8 peer-group RACKS
+neighbor 192.10.1.9 peer-group RACKS
+neighbor 192.10.1.10 peer-group RACKS
+no auto-summary
+!
+address-family ipv4
+redistribute connected route-map LOOPBACKS
+neighbor RACKS activate
+neighbor RACKS route-map BGP_IN in
+neighbor RACKS route-map BGP_OUT out
+neighbor 192.10.1.1 peer-group RACKS
+neighbor 192.10.1.2 peer-group RACKS
+neighbor 192.10.1.3 peer-group RACKS
+neighbor 192.10.1.4 peer-group RACKS
+neighbor 192.10.1.5 peer-group RACKS
+neighbor 192.10.1.6 peer-group RACKS
+neighbor 192.10.1.7 peer-group RACKS
+neighbor 192.10.1.8 peer-group RACKS
+neighbor 192.10.1.9 peer-group RACKS
+neighbor 192.10.1.10 peer-group RACKS
+no auto-summary
+no synchronization
+exit-address-family
+!
+no ip http server
+ip classless
+!
+ip as-path access-list 1 permit ^$
+!
+!
+ip prefix-list DEFAULT seq 5 permit 0.0.0.0/0
+!
+ip prefix-list DENY_DEFAULT seq 5 deny 0.0.0.0/0
+ip prefix-list DENY_DEFAULT seq 10 permit 0.0.0.0/0 le 32
+!
+ip prefix-list LOOPBACKS seq 5 permit 205.90.31.0/24
+ip prefix-list LOOPBACKS seq 10 permit 220.20.3.0/24
+ip prefix-list LOOPBACKS seq 15 permit 222.22.2.0/24
+!
+ipv6 router ospf 1
+router-id 192.10.1.254
+redistribute connected route-map OSPFv3_LOOPBACK
+!
+ipv6 router rip RIPng
+distribute-list prefix-list RIPng out
+!
+ipv6 prefix-list OSPFv3_LOOPBACK seq 5 permit 2001:51:51:51::/64
+!
+ipv6 prefix-list RIPng seq 5  permit 2001:205:90:31::/64
+ipv6 prefix-list RIPng seq 10 permit 2001:220:20:3::/64
+ipv6 prefix-list RIPng seq 15 permit 2001:222:22:2::/64
+!
+route-map LO51515151 permit 10
+match interface Loopback51515151
+!
+route-map OSPFv3_LOOPBACK permit 10
+match ipv6 address prefix-list OSPFv3_LOOPBACK
+!
+route-map BGP_IN deny 10
+match ip address prefix-list DEFAULT
+!
+route-map BGP_IN permit 10000
+!
+route-map LOOPBACKS permit 10
+match ip address prefix-list LOOPBACKS
+!
+route-map BGP_OUT permit 10000
+match as-path 1
+!
+privilege exec level 0 telnet
+privilege exec level 0 traceroute
+privilege exec level 0 ping
+privilege exec level 1 terminal length
+privilege exec level 1 terminal
+privilege exec level 1 enable
+privilege exec level 0 show ip bgp neighbors
+privilege exec level 0 show ip bgp summary
+privilege exec level 0 show ip bgp
+privilege exec level 0 show ip route
+privilege exec level 0 show ip protocols
+privilege exec level 0 show ip interface brief
+privilege exec level 0 show ip
+privilege exec level 0 show
+!
+alias exec en exit
+alias exec ena exit
+alias exec enab exit
+alias exec enabl exit
+!
+line con 0
+exec-timeout 5 0
+privilege level 1
+no login
+line aux 0
+transport input all
+line vty 0 4
+exec-timeout 5 0
+privilege level 0
+no login
+!
+ntp authentication-key 1 md5 CISCO
+ntp trusted-key 1
+ntp master 4
+!
+banner exec ^
+
++-------------------------------------------------------------------------------+
+|                                                                               |
+| Welcome to BB2.  The following commands are available for use at privilege 0  |
+|                                                                               |
+| ping                           show ip bgp                                    |
+| telnet                         show ip bgp neighbors                          |
+| traceroute                     show ip bgp summary                            |
+| show ip route                  show ip interface brief                        |
+| show ip protocols                                                             |
+|                                                                               |
+| The reference configuration for this device is available at:                  |
+| http://www.ine.com/downloads/bb2.txt                                          |
+|                                                                               |
++-------------------------------------------------------------------------------+
+^
+config-register 0x2102
+end
